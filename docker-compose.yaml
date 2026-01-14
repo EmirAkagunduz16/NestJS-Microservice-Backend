@@ -32,6 +32,23 @@ services:
       - .:/usr/src/app
     depends_on:
       - mongo
+
+  payments:
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+      target: development
+    command: pnpm run start:dev payments
+    env_file:
+      - ./apps/payments/.env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/sleepr
+    ports:
+      - 3003:3003
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - mongo
       
   mongo:
     image: mongo:latest
