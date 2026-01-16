@@ -1,17 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { NOTIFICATIONS_SERVICE } from '@app/common';
-import { CreateChargeDto } from '@app/common/dto';
-import { ClientProxy } from '@nestjs/microservices';
+import {
+  NOTIFICATIONS_SERVICE_NAME,
+  NotificationsServiceClient,
+} from '@app/common';
+import type { ClientGrpc } from '@nestjs/microservices';
 import { PaymentCreateChargeDto } from './dto/payment-create-charge.dto';
 
 @Injectable()
 export class PaymentsService {
+  private notificationsService: NotificationsServiceClient;
+
   constructor(
     private readonly configService: ConfigService,
-    @Inject(NOTIFICATIONS_SERVICE)
-    private readonly notificationsClient: ClientProxy,
+    @Inject(NOTIFICATIONS_SERVICE_NAME)
+    private readonly client: ClientGrpc,
   ) {
     this.stripe = new Stripe(
       this.configService.get<string>('STRIPE_SECRET_KEY') ?? '',
@@ -20,7 +24,7 @@ export class PaymentsService {
 
   private readonly stripe: Stripe;
 
-  async createCharge({ amount, email }: PaymentCreateChargeDto) {
+  async createCharge({ card, amount, email }: PaymentCreateChargeDto) {
     // // Use token if provided, otherwise create payment method from card details
     // let paymentMethodId: string;
 
@@ -37,18 +41,37 @@ export class PaymentsService {
     //   paymentMethodId = 'pm_card_visa'; // Stripe's test payment method
     // }
 
+    const paymentMethod = await this.stripe.paymentMethods.create({
+      type: 'card',
+      card: {
+        cvc: card.cvc,
+        number: card.number,
+        exp_month: card.expMonth,
+        exp_year: card.expYear,
+      },
+    });
+
     const paymentIntent = await this.stripe.paymentIntents.create({
-      payment_method: 'pm_card_visa',
+      payment_method: paymentMethod.id,
       amount: amount * 100,
       confirm: true,
       payment_method_types: ['card'],
       currency: 'usd',
     });
 
-    this.notificationsClient.emit('notify_email', {
-      email,
-      text: `Your payment of $${amount} has been received.`,
-    });
+    if (!this.notificationsService) {
+      this.notificationsService =
+        this.client.getService<NotificationsServiceClient>(
+          NOTIFICATIONS_SERVICE_NAME,
+        );
+    }
+
+    this.notificationsService
+      .notifyEmail({
+        email,
+        text: `Your payment of $${amount} has been received.`,
+      })
+      .subscribe(() => {});
 
     return paymentIntent;
   }

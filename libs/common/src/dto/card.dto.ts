@@ -5,27 +5,28 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { CardMessage } from '../types';
 
-export class CardDto {
+export class CardDto implements CardMessage {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
-  cvc?: string;
+  cvc: string;
 
   @IsNumber()
   @IsOptional()
-  exp_month?: number;
+  expMonth: number;
 
   @IsNumber()
   @IsOptional()
-  exp_year?: number;
+  expYear: number;
 
   @IsCreditCard()
   @IsOptional()
-  number?: string;
+  number: string;
 
   // For Stripe test tokens like 'tok_visa'
   @IsString()
   @IsOptional()
-  token?: string;
+  token: string;
 }

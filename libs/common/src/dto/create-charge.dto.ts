@@ -6,8 +6,9 @@ import {
   IsNumber,
   ValidateNested,
 } from 'class-validator';
+import { CreateChargeRequest } from '../types';
 
-export class CreateChargeDto {
+export class CreateChargeDto implements Omit<CreateChargeRequest, 'email'> {
   @IsDefined()
   @IsNotEmptyObject()
   @ValidateNested()
