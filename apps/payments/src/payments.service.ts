@@ -24,7 +24,7 @@ export class PaymentsService {
 
   private readonly stripe: Stripe;
 
-  async createCharge({ card, amount, email }: PaymentCreateChargeDto) {
+  async createCharge({ amount, email }: PaymentCreateChargeDto) {
     // // Use token if provided, otherwise create payment method from card details
     // let paymentMethodId: string;
 
@@ -41,18 +41,18 @@ export class PaymentsService {
     //   paymentMethodId = 'pm_card_visa'; // Stripe's test payment method
     // }
 
-    const paymentMethod = await this.stripe.paymentMethods.create({
-      type: 'card',
-      card: {
-        cvc: card.cvc,
-        number: card.number,
-        exp_month: card.expMonth,
-        exp_year: card.expYear,
-      },
-    });
+    // const paymentMethod = await this.stripe.paymentMethods.create({
+    //   type: 'card',
+    //   card: {
+    //     cvc: card.cvc,
+    //     number: card.number,
+    //     exp_month: card.expMonth,
+    //     exp_year: card.expYear,
+    //   },
+    // });
 
     const paymentIntent = await this.stripe.paymentIntents.create({
-      payment_method: paymentMethod.id,
+      payment_method: 'pm_card_visa',
       amount: amount * 100,
       confirm: true,
       payment_method_types: ['card'],
