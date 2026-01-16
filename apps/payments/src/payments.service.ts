@@ -1,11 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { CreateChargeDto } from '../../../libs/common/src/dto/create-charge.dto';
+import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { CreateChargeDto } from '@app/common/dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { PaymentCreateChargeDto } from './dto/payment-create-charge.dto';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(NOTIFICATIONS_SERVICE)
+    private readonly notificationsClient: ClientProxy,
+  ) {
     this.stripe = new Stripe(
       this.configService.get<string>('STRIPE_SECRET_KEY') ?? '',
     );
@@ -13,7 +20,7 @@ export class PaymentsService {
 
   private readonly stripe: Stripe;
 
-  async createCharge({ amount }: CreateChargeDto) {
+  async createCharge({ amount, email }: PaymentCreateChargeDto) {
     // // Use token if provided, otherwise create payment method from card details
     // let paymentMethodId: string;
 
@@ -36,6 +43,11 @@ export class PaymentsService {
       confirm: true,
       payment_method_types: ['card'],
       currency: 'usd',
+    });
+
+    this.notificationsClient.emit('notify_email', {
+      email,
+      text: `Your payment of $${amount} has been received.`,
     });
 
     return paymentIntent;

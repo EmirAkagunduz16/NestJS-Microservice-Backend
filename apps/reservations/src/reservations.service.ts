@@ -5,6 +5,7 @@ import { ReservationRepository } from './reservations.repository';
 import { PAYMENTS_SERVICE } from '@app/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { map } from 'rxjs';
+import { UserDto } from '@app/common/dto';
 
 @Injectable()
 export class ReservationsService {
@@ -13,9 +14,15 @@ export class ReservationsService {
     @Inject(PAYMENTS_SERVICE) private readonly paymentsClient: ClientProxy,
   ) {}
 
-  async create(createReservationDto: CreateReservationDto, userId: string) {
+  async create(
+    createReservationDto: CreateReservationDto,
+    { email, _id: userId }: UserDto,
+  ) {
     return this.paymentsClient
-      .send('create_charge', createReservationDto.charge)
+      .send('create_charge', {
+        ...createReservationDto.charge,
+        email,
+      })
       .pipe(
         map((response) => {
           return this.reservationsRepository.create({
