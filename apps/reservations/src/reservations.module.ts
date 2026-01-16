@@ -25,20 +25,20 @@ import { AUTH_SERVICE, PAYMENTS_SERVICE } from '@app/common/constants';
       validationSchema: Joi.object({
         MONGODB_URI: Joi.string().required(),
         PORT: Joi.number().required(),
-        AUTH_HOST: Joi.string().required(),
-        AUTH_PORT: Joi.number().required(),
-        PAYMENTS_HOST: Joi.string().required(),
-        PAYMENTS_PORT: Joi.number().required(),
+        RABBITMQ_URI: Joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
       {
         name: AUTH_SERVICE,
         useFactory: (configService: ConfigService) => ({
-          transport: Transport.TCP,
+          transport: Transport.RMQ,
           options: {
-            host: configService.get<string>('AUTH_HOST'),
-            port: configService.get<number>('AUTH_PORT'),
+            urls: [configService.get<string>('RABBITMQ_URI')!],
+            queue: 'auth',
+            queueOptions: {
+              durable: false,
+            },
           },
         }),
         inject: [ConfigService],
@@ -46,10 +46,13 @@ import { AUTH_SERVICE, PAYMENTS_SERVICE } from '@app/common/constants';
       {
         name: PAYMENTS_SERVICE,
         useFactory: (configService: ConfigService) => ({
-          transport: Transport.TCP,
+          transport: Transport.RMQ,
           options: {
-            host: configService.get<string>('PAYMENTS_HOST'),
-            port: configService.get<number>('PAYMENTS_PORT'),
+            urls: [configService.get<string>('RABBITMQ_URI')!],
+            queue: 'payments',
+            queueOptions: {
+              durable: false,
+            },
           },
         }),
         inject: [ConfigService],
