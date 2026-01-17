@@ -62,6 +62,21 @@ services:
       - .:/usr/src/app
     depends_on:
       - mongo
+
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+      target: development
+    command: pnpm run start:dev gateway
+    env_file:
+      - ./apps/gateway/.env
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - 3004:3004
+    depends_on:
+      - mongo
       
   mongo:
     image: mongo:latest
